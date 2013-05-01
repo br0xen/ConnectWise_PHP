@@ -58,6 +58,7 @@ class Connectwise {
 					.'<IntegrationLoginId>'.$this->username.'</IntegrationLoginId>'
 					.'<IntegrationPassword>'.$this->password.'</IntegrationPassword>';
 		foreach($this->parms as $parm_name => $parm_val) {
+			if($parm_name == "Conditions") { $parm_val = "<![CDATA[".$parm_val."]]>"; }
 			$xml .= '<'.$parm_name.'>'.$parm_val.'</'.$parm_name.'>';
 		}
 		$xml .= '</'.$this->actionName.'>';
