@@ -51,20 +51,6 @@ class Connectwise {
 	public function getParameters() { return $this->parms; }
 	public function getParameterValue($parm_key) { return $this->parms[$parm_key]; }
 
-	public function genActionString() {
-		$xml =	 '<?xml version="1.0" encoding="utf-16"?>'
-					.'<'.$this->actionName.' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">'
-					.'<CompanyName>'.$this->co_id.'</CompanyName>'
-					.'<IntegrationLoginId>'.$this->username.'</IntegrationLoginId>'
-					.'<IntegrationPassword>'.$this->password.'</IntegrationPassword>';
-		foreach($this->parms as $parm_name => $parm_val) {
-			if($parm_name == "Conditions") { $parm_val = "<![CDATA[".$parm_val."]]>"; }
-			$xml .= '<'.$parm_name.'>'.$parm_val.'</'.$parm_name.'>';
-		}
-		$xml .= '</'.$this->actionName.'>';
-		return $xml;
-	}
-
 	public function makeCall() {
 		// Append Action stuff to URL
 		$xml = $this->genActionString();
@@ -79,5 +65,29 @@ class Connectwise {
 		$ret = new SimpleXMLElement($rawXML);
 		return json_decode(json_encode($ret), 1);
 	}
+
+	public function genActionString() {
+		$xml =	 '<?xml version="1.0" encoding="utf-16"?>'
+					.'<'.$this->actionName.' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">'
+					.'<CompanyName>'.$this->co_id.'</CompanyName>'
+					.'<IntegrationLoginId>'.$this->username.'</IntegrationLoginId>'
+					.'<IntegrationPassword>'.$this->password.'</IntegrationPassword>';
+		$xml.=$this->genActionString_sub($this->parms);
+		$xml .= '</'.$this->actionName.'>';
+		return $xml;
+	}
+
+    public function genActionString_sub($parms) {
+        $ret_string = "";
+        if(is_array($parms)) {
+            foreach($parms as $parm_name => $parm_val) {
+                if($parm_name == "Conditions") { $parm_val = "<![CDATA[".$parm_val."]]>"; }
+                $ret_string.="<".$parm_name.">".$this->genActionString_sub($parm_val)."</".$parm_name.">";
+            }
+        } else {
+            $ret_string = $parms;
+        }
+        return $ret_string;
+    }
 }
 /* End of Connectwise.php */
