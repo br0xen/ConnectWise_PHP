@@ -17,7 +17,7 @@ class Connectwise {
 	// Integrator Password
 	var $password = "";
 
-	/* You shouldn't need to edit anything past this point */
+	/* You shouldn't need to edit anything beyond this point */
 	var $base_url_ext = "services/system_io/integration_io/processClientAction.rails";
 	var $base_url = "";
 	var $actionName = "";
@@ -33,13 +33,13 @@ class Connectwise {
 	public function useSSL($yn_ssl=TRUE) { $this->use_ssl = $yn_ssl; }
 	public function validSSL($yn_ssl=TRUE) { $this->valid_ssl_cert = $yn_ssl; }
 
-	public function setCWHost($new_cw_host=NULL) { 
+	public function setCWUrl($new_cw_url=NULL) { 
 		if(isset($new_cw_host)) {
 			$this->cw_host = $new_cw_host;
 		}
 		$this->base_url = ($this->use_ssl?"https://":"http://").$this->cw_host."/".$this->cw_release."/".$this->base_url_ext;
 	}
-	public function getCWHost() { return $this->base_url; } 
+	public function getCWUrl() { return $this->base_url; }
 	public function setCOID($new_co_id) { $this->co_id = $new_co_id; }
 	public function getCOID() { return $this->co_id; }
 	public function setUsername($username) { $this->username = $username; }
@@ -67,16 +67,23 @@ class Connectwise {
 		curl_setopt($cp, CURLOPT_POST, TRUE);
 		curl_setopt($cp, CURLOPT_POSTFIELDS, array('actionString'=>$xml));
 		$rawXML = curl_exec($cp);
+		if($rawXML===FALSE) {
+			return array('error' => 
+				array(	'code'=>curl_errno($cp),
+						'string'=>curl_error($cp)
+				)
+			);
+		}
 		curl_close($cp);
 		// ConnectWise returns an XML file that claims to be UTF-16 but it
 		// actually appears to be utf-8, so a string replace here fixes it
 		$rawXML = str_replace("utf-16","utf-8",$rawXML);
 		$ret = new SimpleXMLElement($rawXML);
-		return json_decode(json_encode($ret), 1);
+		return json_decode(json_encode($ret), TRUE);
 	}
 
 	public function genActionString() {
-		$xml =   '<?xml version="1.0" encoding="utf-16"?>'
+		$xml =	'<?xml version="1.0" encoding="utf-16"?>'
 					.'<'.$this->actionName.' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">'
 					.'<CompanyName>'.$this->co_id.'</CompanyName>'
 					.'<IntegrationLoginId>'.$this->username.'</IntegrationLoginId>'
@@ -98,5 +105,4 @@ class Connectwise {
 		}
 		return $ret_string;
 	}
-
 }
