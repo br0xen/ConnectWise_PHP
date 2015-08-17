@@ -83,9 +83,37 @@ class Connectwise {
       $ret = new SimpleXMLElement($rawXML);
     } catch(Exception $e) {
       return FALSE;
-    }
+		}
+    // Convert XML to JSON, then to array
     return json_decode(json_encode($ret), TRUE);
-  }
+	}
+
+	public function makeCallXML() {
+		$xml = $this->genActionString();
+		$cp = curl_init($this->base_url);
+    curl_setopt($cp, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt($cp, CURLOPT_FOLLOWLOCATION, TRUE);
+    curl_setopt($cp, CURLOPT_MAXREDIRS, 10);
+    if($this->use_ssl) {
+        curl_setopt($cp, CURLOPT_PORT, 443);
+        curl_setopt($cp, CURLOPT_SSL_VERIFYPEER, $this->valid_ssl_cert);
+    }
+    curl_setopt($cp, CURLOPT_POST, TRUE);
+    curl_setopt($cp, CURLOPT_POSTFIELDS, array('actionString'=>$xml));
+    $rawXML = curl_exec($cp);
+    if($rawXML===FALSE) {
+        return array('error' => 
+            array(  'code'=>curl_errno($cp),
+                    'string'=>curl_error($cp)
+            )
+        );
+    }
+    curl_close($cp);
+    // ConnectWise returns an XML file that claims to be UTF-16 but it
+    // actually appears to be utf-8, so a string replace here fixes it
+    $rawXML = str_replace("utf-16","utf-8",$rawXML);
+    return $rawXML;
+	}
 
   public function genActionString() {
     $xml = '<?xml version="1.0" encoding="utf-16"?>'
@@ -93,7 +121,7 @@ class Connectwise {
           .'<CompanyName>'.$this->co_id.'</CompanyName>'
           .'<IntegrationLoginId>'.$this->username.'</IntegrationLoginId>'
           .'<IntegrationPassword>'.$this->password.'</IntegrationPassword>';
-    $xml .=$this->genActionString_sub($this->parms);
+    $xml.=$this->genActionString_sub($this->parms);
     $xml .= '</'.$this->actionName.'>';
     return $xml;
   }
